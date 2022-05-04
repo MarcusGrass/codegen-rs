@@ -388,7 +388,20 @@ impl EnumBuilder {
     set_visibility!();
 
     pub fn add_tag_member(mut self, name: impl Into<String>) -> Self {
-        self.members.push(EnumMember::new(name, MemberType::Empty));
+        self.members
+            .push(EnumMember::new(name, MemberType::Empty(None)));
+        self
+    }
+
+    pub fn add_tag_member_with_value(
+        mut self,
+        name: impl Into<String>,
+        value_literal: impl Into<String>,
+    ) -> Self {
+        self.members.push(EnumMember::new(
+            name,
+            MemberType::Empty(Some(value_literal.into())),
+        ));
         self
     }
 

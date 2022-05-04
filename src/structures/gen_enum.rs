@@ -18,7 +18,7 @@ impl EnumEntity {
             .members
             .iter()
             .filter_map(|member| match &member.member_type {
-                MemberType::Empty => None,
+                MemberType::Empty(_) => None,
                 MemberType::Type(s) => Some(s.generics.clone()),
                 MemberType::Pattern(ncs) => ncs
                     .iter()
@@ -81,7 +81,7 @@ impl EnumMember {
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub enum MemberType {
-    Empty,
+    Empty(Option<String>),
     Type(Signature),
     Pattern(Vec<NamedComponentSignature>),
 }
@@ -89,8 +89,13 @@ pub enum MemberType {
 impl MemberType {
     pub fn format(&self) -> String {
         match self {
-            MemberType::Empty => ",".to_owned(),
-            MemberType::Type(s) => format!("({}),", s.format_diamond_typed()),
+            MemberType::Empty(v) => v
+                .as_ref()
+                .map(|v| format!(" = {},", v))
+                .unwrap_or_else(|| String::from(",")),
+            MemberType::Type(s) => {
+                format!("({}),", s.format_diamond_typed())
+            }
             MemberType::Pattern(c) => {
                 let chain = c
                     .iter()
@@ -191,8 +196,10 @@ mod tests {
                         ),
                     ]),
                 ),
+                EnumMember::new("MyThirdTag", MemberType::Empty(Some("Value".to_owned()))),
+                EnumMember::new("MyFourthTag", MemberType::Empty(None)),
             ],
         );
-        assert_eq!("#[cfg(feature = \"debug\")]\npub enum MyEnum<T> where T: Debug {\nMyFirstTag(MyStruct<T>),\nMySecondTag { first: i32, second: u32 }, \n}\n", enum_e.format());
+        assert_eq!("#[cfg(feature = \"debug\")]\npub enum MyEnum<T> where T: Debug {\nMyFirstTag(MyStruct<T>),\nMySecondTag { first: i32, second: u32 }, \nMyThirdTag = Value,\nMyFourthTag,\n}\n", enum_e.format());
     }
 }
