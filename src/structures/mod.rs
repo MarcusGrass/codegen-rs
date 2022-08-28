@@ -208,6 +208,8 @@ impl Import {
 pub struct RustType {
     // crate::blablabla::bla
     package_spec: Option<String>,
+    // Box for stack shennanigans
+    wrapped: Option<Box<RustType>>,
     pub(crate) name: String,
 }
 
@@ -215,18 +217,32 @@ impl RustType {
     pub fn in_scope(name: impl Into<String>) -> Self {
         Self {
             package_spec: None,
+            wrapped: None,
             name: name.into(),
         }
     }
+
     pub fn from_package(package_spec: impl Into<String>, name: impl Into<String>) -> Self {
         Self {
             package_spec: Some(package_spec.into()),
+            wrapped: None,
             name: name.into(),
         }
     }
+
+    pub fn wrap(self, other: RustType) -> Self {
+        Self {
+            package_spec: self.package_spec,
+            wrapped: Some(Box::new(other)),
+            name: self.name,
+        }
+    }
+
     pub fn format(&self) -> String {
         if let Some(package) = &self.package_spec {
             format!("{}::{}", package, self.name)
+        } else if let Some(wrapped) = &self.wrapped {
+            format!("{}<{}>", self.name, wrapped.format())
         } else {
             self.name.clone()
         }
