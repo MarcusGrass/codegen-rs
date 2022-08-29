@@ -1,3 +1,4 @@
+pub mod casing;
 macro_rules! add_annotation {
     () => {
         pub fn add_annotation(mut self, annotation: crate::structures::Annotation) -> Self {

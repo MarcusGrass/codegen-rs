@@ -14,6 +14,7 @@ use std::path::Path;
 pub mod structures;
 #[macro_use]
 mod util;
+mod errors;
 
 pub trait HasAnnotationBuilder {
     fn set_annotation(self) -> Self;
