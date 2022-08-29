@@ -1,11 +1,12 @@
 use crate::structures::generics::{Generic, Generics};
 use crate::structures::visibility::Visibility;
 use crate::structures::{Annotations, ComponentSignature, Signature};
-use crate::RustType;
+use crate::{Derives, RustType};
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct EnumEntity {
     annotations: Annotations,
+    derives: Derives,
     visibility: Visibility,
     name: String,
     members: Vec<EnumMember>,
@@ -32,8 +33,9 @@ impl EnumEntity {
             union = union.union(&generics);
         }
         let mut base = format!(
-            "{}{}enum {}{} {}{{\n",
+            "{}{}{}enum {}{} {}{{\n",
             self.annotations.format(),
+            self.derives.format(),
             self.visibility.format(),
             self.name,
             union.format_diamond_typed(),
@@ -47,12 +49,14 @@ impl EnumEntity {
     }
     pub fn new(
         annotations: Annotations,
+        derives: Derives,
         visibility: Visibility,
         name: impl Into<String>,
         members: Vec<EnumMember>,
     ) -> Self {
         Self {
             annotations,
+            derives,
             visibility,
             name: name.into(),
             members,
@@ -160,12 +164,13 @@ mod tests {
     use crate::structures::generics::{Bound, Generic, Generics};
     use crate::structures::visibility::Visibility;
     use crate::structures::{Annotation, Annotations, ComponentSignature, RustType, Signature};
-    use crate::Bounds;
+    use crate::{Bounds, Derives};
 
     #[test]
     fn create_enum() {
         let enum_e = EnumEntity::new(
             Annotations::new(vec![Annotation::new("cfg(feature = \"debug\")")]),
+            Derives::new(vec![RustType::in_scope("Debug")]),
             Visibility::Public,
             "MyEnum",
             vec![
@@ -200,6 +205,6 @@ mod tests {
                 EnumMember::new("MyFourthTag", MemberType::Empty(None)),
             ],
         );
-        assert_eq!("#[cfg(feature = \"debug\")]\npub enum MyEnum<T> where T: Debug {\nMyFirstTag(MyStruct<T>),\nMySecondTag { first: i32, second: u32 }, \nMyThirdTag = Value,\nMyFourthTag,\n}\n", enum_e.format());
+        assert_eq!("#[cfg(feature = \"debug\")]\n#[derive(Debug)]\npub enum MyEnum<T> where T: Debug {\nMyFirstTag(MyStruct<T>),\nMySecondTag { first: i32, second: u32 }, \nMyThirdTag = Value,\nMyFourthTag,\n}\n", enum_e.format());
     }
 }

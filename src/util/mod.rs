@@ -14,6 +14,19 @@ macro_rules! add_annotation {
     };
 }
 
+macro_rules! add_derive {
+    () => {
+        pub fn add_derive_in_scope(mut self, type_name: impl Into<String>) -> Self {
+            self.derives.rust_types.push(RustType::in_scope(type_name));
+            self
+        }
+        pub fn add_derive(mut self, rust_type: RustType) -> Self {
+            self.derives.rust_types.push(rust_type);
+            self
+        }
+    };
+}
+
 macro_rules! set_async {
     () => {
         pub fn set_async(mut self) -> Self {

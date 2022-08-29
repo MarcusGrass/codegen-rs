@@ -249,7 +249,7 @@ impl RustType {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Derives {
     pub(crate) rust_types: Vec<RustType>,
 }

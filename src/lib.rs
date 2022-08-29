@@ -364,6 +364,7 @@ impl FunctionBuilder {
 #[derive(Debug, Clone)]
 pub struct EnumBuilder {
     annotations: Annotations,
+    derives: Derives,
     visibility: Visibility,
     name: String,
     members: Vec<EnumMember>,
@@ -379,12 +380,14 @@ impl EnumBuilder {
     pub fn new(name: impl Into<String>) -> Self {
         Self {
             annotations: Annotations::empty(),
+            derives: Derives::empty(),
             visibility: Visibility::Private,
             name: name.into(),
             members: vec![],
         }
     }
     add_annotation!();
+    add_derive!();
     set_visibility!();
 
     pub fn add_tag_member(mut self, name: impl Into<String>) -> Self {
@@ -422,7 +425,7 @@ impl EnumBuilder {
     }
 
     fn build(self) -> EnumEntity {
-        EnumEntity::new(self.annotations, self.visibility, self.name, self.members)
+        EnumEntity::new(self.annotations, self.derives, self.visibility, self.name, self.members)
     }
 }
 
@@ -457,14 +460,7 @@ impl StructBuilder {
     }
 
     add_annotation!();
-    pub fn add_derive_in_scope(mut self, type_name: impl Into<String>) -> Self {
-        self.derives.rust_types.push(RustType::in_scope(type_name));
-        self
-    }
-    pub fn add_derive(mut self, rust_type: RustType) -> Self {
-        self.derives.rust_types.push(rust_type);
-        self
-    }
+    add_derive!();
     set_visibility!();
     pub fn add_field(
         mut self,
