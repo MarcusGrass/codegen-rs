@@ -442,8 +442,8 @@ pub struct StructBuilder {
     annotations: Annotations,
     derives: Derives,
     visibility: Visibility,
-    name: String,
-    fields: Vec<Field>,
+    pub name: String,
+    pub fields: Vec<Field>,
 }
 
 impl ToSourceFilePart for StructBuilder {

@@ -73,7 +73,7 @@ impl Display for Ownership {
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Signature {
-    pub(crate) rust_type: RustType,
+    pub rust_type: RustType,
     generics: Generics,
 }
 
@@ -210,7 +210,7 @@ pub struct RustType {
     package_spec: Option<String>,
     // Box for stack shennanigans
     wrapped: Option<Box<RustType>>,
-    pub(crate) name: String,
+    pub name: String,
 }
 
 impl RustType {

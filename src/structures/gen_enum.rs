@@ -115,8 +115,8 @@ impl MemberType {
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct NamedComponentSignature {
-    pub(crate) name: String,
-    pub(crate) component_signature: ComponentSignature,
+    pub name: String,
+    pub component_signature: ComponentSignature,
 }
 
 impl NamedComponentSignature {

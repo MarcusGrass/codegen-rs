@@ -61,7 +61,7 @@ impl StructEntity {
 #[derive(Debug, Clone)]
 pub struct Field {
     visibility: Visibility,
-    named_component_signature: NamedComponentSignature,
+    pub named_component_signature: NamedComponentSignature,
 }
 
 impl Field {
