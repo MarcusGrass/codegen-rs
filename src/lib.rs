@@ -14,6 +14,7 @@ use std::path::Path;
 pub mod structures;
 #[macro_use]
 mod util;
+pub use util::casing::{fix_keyword, Case};
 mod errors;
 
 pub trait HasAnnotationBuilder {
@@ -426,7 +427,13 @@ impl EnumBuilder {
     }
 
     fn build(self) -> EnumEntity {
-        EnumEntity::new(self.annotations, self.derives, self.visibility, self.name, self.members)
+        EnumEntity::new(
+            self.annotations,
+            self.derives,
+            self.visibility,
+            self.name,
+            self.members,
+        )
     }
 }
 

@@ -2,6 +2,7 @@ use crate::structures::generics::{Generic, Generics};
 use crate::structures::visibility::Visibility;
 use crate::structures::{Annotations, ComponentSignature, Signature};
 use crate::{Derives, RustType};
+use std::fmt::Write;
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct EnumEntity {
@@ -42,7 +43,7 @@ impl EnumEntity {
             union.format_where_clause()
         );
         for member in &self.members {
-            base.push_str(&format!("{}\n", member.format()))
+            base.write_fmt(format_args!("{}\n", member.format()));
         }
         base.push_str("}\n");
         base
