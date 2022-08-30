@@ -1,6 +1,7 @@
 use crate::structures::method::Method;
 use crate::structures::{Annotations, Signature, TypeDef};
 use crate::Visibility;
+use std::fmt::Write;
 
 pub struct ImplEntity {
     annotations: Annotations,
@@ -43,7 +44,7 @@ impl ImplEntity {
                 with_container_owned.visibility = Visibility::Private;
             }
             with_container_owned.container_inherited_generics = container_owned.clone();
-            base.push_str(&format!("{}\n", with_container_owned.format()))
+            let _ = base.write_fmt(format_args!("{}\n", with_container_owned.format()));
         }
         base.push_str("}\n");
         base

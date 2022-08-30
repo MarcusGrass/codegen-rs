@@ -43,7 +43,7 @@ impl EnumEntity {
             union.format_where_clause()
         );
         for member in &self.members {
-            base.write_fmt(format_args!("{}\n", member.format()));
+            let _ = base.write_fmt(format_args!("{}\n", member.format()));
         }
         base.push_str("}\n");
         base

@@ -295,7 +295,7 @@ fn capitalize(input: &str) -> String {
 
 #[inline]
 fn spaced_to_pascal(input: &str) -> String {
-    snake_to_pascal(&spaced_to_snake(&input))
+    snake_to_pascal(&spaced_to_snake(input))
 }
 
 #[inline]
