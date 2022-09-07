@@ -142,8 +142,8 @@ pub enum TypeDef {
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct TypeDefDeclaration {
-    visibility: Visibility,
-    named_component_signature: NamedComponentSignature,
+    pub visibility: Visibility,
+    pub named_component_signature: NamedComponentSignature,
 }
 
 impl TypeDefDeclaration {
@@ -169,7 +169,7 @@ impl TypeDef {
             }
             TypeDef::Const(tdd) => {
                 format!(
-                    "{} type {} = {}\n",
+                    "{}type {} = {};\n",
                     tdd.visibility,
                     tdd.named_component_signature.name,
                     tdd.named_component_signature.component_signature

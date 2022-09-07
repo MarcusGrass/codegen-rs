@@ -368,7 +368,7 @@ pub struct EnumBuilder {
     annotations: Annotations,
     derives: Derives,
     visibility: Visibility,
-    name: String,
+    pub name: String,
     members: Vec<EnumMember>,
 }
 
