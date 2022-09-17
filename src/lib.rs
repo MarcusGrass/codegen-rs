@@ -14,7 +14,7 @@ use std::path::Path;
 pub mod structures;
 #[macro_use]
 mod util;
-pub use util::casing::{fix_keyword, InferCase};
+pub use util::casing::{fix_keyword, InferCase, RustCase};
 mod errors;
 
 pub trait HasAnnotationBuilder {
