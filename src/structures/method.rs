@@ -187,12 +187,20 @@ pub struct Argument {
 
 impl Argument {
     pub fn format(&self) -> String {
-        format!(
-            "{}: {}{}",
-            self.named_sign.name,
-            self.ownership.format(),
-            self.named_sign.component_signature.format(),
-        )
+        match self.ownership {
+            Ownership::Owned | Ownership::Ref | Ownership::MutRef => format!(
+                "{}: {}{}",
+                self.named_sign.name,
+                self.ownership.format(),
+                self.named_sign.component_signature.format(),
+            ),
+            Ownership::OwnedMut => format!(
+                "{}{}: {}",
+                self.ownership.format(),
+                self.named_sign.name,
+                self.named_sign.component_signature.format(),
+            ),
+        }
     }
     pub fn new(ownership: Ownership, named_sign: NamedComponentSignature) -> Self {
         Self {
