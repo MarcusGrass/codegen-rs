@@ -1,7 +1,7 @@
 use crate::structures::gen_const::{ConstantEntity, ConstantType};
 use crate::structures::gen_enum::{EnumEntity, EnumMember, MemberType, NamedComponentSignature};
 use crate::structures::gen_impl::ImplEntity;
-use crate::structures::gen_struct::{Field, StructEntity};
+use crate::structures::gen_struct::{Field, StructEntity, StructKind};
 use crate::structures::generics::{Bounds, Generic, Generics};
 use crate::structures::method::{Argument, FunctionEntity, Method};
 use crate::structures::visibility::Visibility;
@@ -113,6 +113,7 @@ pub struct FileBuilder {
     functions: Vec<OrderedFormat<FunctionBuilder>>,
     enums: Vec<OrderedFormat<EnumBuilder>>,
     structs: Vec<OrderedFormat<StructBuilder>>,
+    container_structs: Vec<OrderedFormat<ContainerStructBuilder>>,
     implementations: Vec<OrderedFormat<ImplBuilder>>,
     parts: usize,
 }
@@ -128,6 +129,7 @@ impl FileBuilder {
             functions: vec![],
             enums: vec![],
             structs: vec![],
+            container_structs: vec![],
             implementations: vec![],
             parts: 0,
         }
@@ -185,6 +187,16 @@ impl FileBuilder {
         self
     }
 
+    pub fn add_container_struct(
+        mut self,
+        container_struct_builder: ContainerStructBuilder,
+    ) -> Self {
+        self.container_structs
+            .push(OrderedFormat::new(self.parts, container_struct_builder));
+        self.parts += 1;
+        self
+    }
+
     pub fn add_function(mut self, function_builder: FunctionBuilder) -> Self {
         self.functions
             .push(OrderedFormat::new(self.parts, function_builder));
@@ -232,6 +244,11 @@ impl FileBuilder {
             )
             .chain(
                 self.structs
+                    .iter()
+                    .map(|i| (i.order, i.value.format_source_file_part())),
+            )
+            .chain(
+                self.container_structs
                     .iter()
                     .map(|i| (i.order, i.value.format_source_file_part())),
             )
@@ -438,12 +455,61 @@ impl EnumBuilder {
 }
 
 #[derive(Debug, Clone)]
+pub struct ContainerStructBuilder {
+    annotations: Annotations,
+    derives: Derives,
+    visibility: Visibility,
+    pub name: String,
+    contained_types: Vec<RustType>,
+}
+
+impl ContainerStructBuilder {
+    pub fn new(name: impl Into<String>) -> Self {
+        Self {
+            annotations: Annotations::empty(),
+            derives: Derives::empty(),
+            visibility: Visibility::Private,
+            name: name.into(),
+            contained_types: vec![],
+        }
+    }
+
+    pub fn new_from_signature(signature: &Signature) -> Self {
+        Self::new(&signature.rust_type.name)
+    }
+
+    pub fn add_contained(mut self, rust_type: RustType) -> Self {
+        self.contained_types.push(rust_type);
+        self
+    }
+    add_annotation!();
+    add_derive!();
+    set_visibility!();
+
+    fn build(self) -> StructEntity {
+        StructEntity::new(
+            self.annotations,
+            self.derives,
+            self.visibility,
+            self.name,
+            StructKind::Container(self.contained_types),
+        )
+    }
+}
+
+impl ToSourceFilePart for ContainerStructBuilder {
+    fn format_source_file_part(&self) -> String {
+        self.clone().build().format()
+    }
+}
+
+#[derive(Debug, Clone)]
 pub struct StructBuilder {
     annotations: Annotations,
     derives: Derives,
     visibility: Visibility,
     pub name: String,
-    pub fields: Vec<Field>,
+    fields: Vec<Field>,
 }
 
 impl ToSourceFilePart for StructBuilder {
@@ -534,7 +600,7 @@ impl StructBuilder {
             self.derives,
             self.visibility,
             self.name,
-            self.fields,
+            StructKind::Fields(self.fields),
         )
     }
 }

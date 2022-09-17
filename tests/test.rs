@@ -1,6 +1,6 @@
 use codegen_rs::structures::gen_enum::NamedComponentSignature;
 use codegen_rs::structures::gen_impl::ImplEntity;
-use codegen_rs::structures::gen_struct::{Field, StructEntity};
+use codegen_rs::structures::gen_struct::{Field, StructEntity, StructKind};
 use codegen_rs::structures::generics::{Bound, Bounds, Generic, Generics};
 use codegen_rs::structures::method::{Argument, FunctionEntity, Method};
 use codegen_rs::structures::visibility::Visibility;
@@ -17,7 +17,7 @@ fn creates_a_basic_struct() {
         Derives::empty(),
         Visibility::Public,
         "MyStruct".to_owned(),
-        vec![
+        StructKind::Fields(vec![
             Field::new(
                 Visibility::Public,
                 NamedComponentSignature::new(
@@ -45,7 +45,7 @@ fn creates_a_basic_struct() {
                     ))),
                 ),
             ),
-        ],
+        ]),
     );
     let expect =
         "pub struct MyStruct {\npub field_a: i32,\npub(crate) field_b: u32,\nfield_c: &str,\n}\n"
@@ -64,10 +64,10 @@ fn creates_a_simple_struct_unbounded_generic() {
         ]),
         Visibility::Public,
         "MyStruct".to_owned(),
-        vec![Field::new(
+        StructKind::Fields(vec![Field::new(
             Visibility::Public,
             NamedComponentSignature::new("field_a", ComponentSignature::Generic(generic)),
-        )],
+        )]),
     );
     let expect =
         "#[derive(Copy, Clone)]\npub struct MyStruct<T> {\npub field_a: T,\n}\n".to_string();
@@ -96,7 +96,7 @@ fn creates_a_struct_with_multiple_bounded_generics() {
         Derives::empty(),
         Visibility::Public,
         "MyStruct".to_owned(),
-        vec![
+        StructKind::Fields(vec![
             Field::new(
                 Visibility::Public,
                 NamedComponentSignature::new("field_a", ComponentSignature::Generic(generic_a)),
@@ -105,7 +105,7 @@ fn creates_a_struct_with_multiple_bounded_generics() {
                 Visibility::Public,
                 NamedComponentSignature::new("field_b", ComponentSignature::Generic(generic_b)),
             ),
-        ],
+        ]),
     );
     let expect = "#[cfg(feature = \"default\")]\n#[cfg(feature = \"other\")]\npub struct MyStruct<T, R> where T: Debug, R: Copy + Clone + ?Sized {\npub field_a: T,\npub field_b: R,\n}\n".to_string();
     assert_eq!(expect, struct_entity.format())

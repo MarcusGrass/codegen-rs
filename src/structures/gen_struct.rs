@@ -1,7 +1,7 @@
 use crate::structures::generics::Generics;
 use crate::structures::visibility::Visibility;
 use crate::structures::{Annotations, ComponentSignature, Derives};
-use crate::NamedComponentSignature;
+use crate::{NamedComponentSignature, RustType};
 
 #[derive(Debug)]
 pub struct StructEntity {
@@ -9,7 +9,13 @@ pub struct StructEntity {
     derives: Derives,
     visibility: Visibility,
     name: String,
-    fields: Vec<Field>,
+    kind: StructKind,
+}
+
+#[derive(Debug)]
+pub enum StructKind {
+    Fields(Vec<Field>),
+    Container(Vec<RustType>),
 }
 
 impl StructEntity {
@@ -18,43 +24,64 @@ impl StructEntity {
         derives: Derives,
         visibility: Visibility,
         name: impl Into<String>,
-        fields: Vec<Field>,
+        kind: StructKind,
     ) -> Self {
         Self {
             annotations,
             derives,
             visibility,
             name: name.into(),
-            fields,
+            kind,
         }
     }
 
     pub fn format(&self) -> String {
-        let mut union = Generics::default();
-        for generics in
-            self.fields
-                .iter()
-                .map(|f| match &f.named_component_signature.component_signature {
-                    ComponentSignature::Signature(s) => s.generics.clone(),
-                    ComponentSignature::Generic(g) => Generics::multiple(vec![g.clone()]),
-                })
-        {
-            union = union.union(&generics);
+        match &self.kind {
+            StructKind::Fields(fields) => {
+                let mut union = Generics::default();
+                for generics in
+                    fields
+                        .iter()
+                        .map(|f| match &f.named_component_signature.component_signature {
+                            ComponentSignature::Signature(s) => s.generics.clone(),
+                            ComponentSignature::Generic(g) => Generics::multiple(vec![g.clone()]),
+                        })
+                {
+                    union = union.union(&generics);
+                }
+                let diamond_typed = union.format_diamond_typed();
+                let bounds = union.format_where_clause();
+                let mut base = format!(
+                    "{}{}{}struct {}{diamond_typed} {bounds}{{\n",
+                    self.annotations.format(),
+                    self.derives.format(),
+                    self.visibility,
+                    self.name
+                );
+                for field in fields {
+                    base.push_str(&field.format_line());
+                }
+                base.push_str("}\n");
+                base
+            }
+            StructKind::Container(c) => {
+                let mut contained = String::new();
+                for (ind, t) in c.iter().enumerate() {
+                    if ind != 0 {
+                        contained.push_str(", ");
+                    }
+                    contained.push_str(&t.format());
+                }
+                format!(
+                    "{}{}{}struct {}({});\n",
+                    self.annotations.format(),
+                    self.derives.format(),
+                    self.visibility,
+                    self.name,
+                    contained
+                )
+            }
         }
-        let diamond_typed = union.format_diamond_typed();
-        let bounds = union.format_where_clause();
-        let mut base = format!(
-            "{}{}{}struct {}{diamond_typed} {bounds}{{\n",
-            self.annotations.format(),
-            self.derives.format(),
-            self.visibility,
-            self.name
-        );
-        for field in &self.fields {
-            base.push_str(&field.format_line());
-        }
-        base.push_str("}\n");
-        base
     }
 }
 
