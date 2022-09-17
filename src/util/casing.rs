@@ -23,12 +23,6 @@ pub enum InferCase {
     SafeChunk,
 }
 
-pub enum Marker {
-    Underscore,
-    Dash,
-    Space,
-}
-
 macro_rules! bail_derive_err {
     ($input: expr, $all_upper: expr, $upper: expr, $starts_upper: expr, $underscore: expr, $dash: expr, $spaced: expr) => {
         return Err(fmt_derive_err(
@@ -297,17 +291,6 @@ impl RustCase {
     pub fn convert_to_valid_rust(input: &str, to: Self) -> Result<String> {
         let s = Self::convert(input, to)?;
         Ok(fix_keyword(&s))
-    }
-
-    fn to_infer(self) -> InferCase {
-        match self {
-            RustCase::Pascal => InferCase::Pascal,
-            RustCase::Snake => InferCase::Snake,
-            RustCase::Kebab => InferCase::Kebab,
-            RustCase::Camel => InferCase::Camel,
-            RustCase::Scream => InferCase::Scream,
-            RustCase::Cobol => InferCase::Cobol,
-        }
     }
 }
 
@@ -589,18 +572,6 @@ mod tests {
         Ok(())
     }
 
-    const ALL_CASES: [InferCase; 9] = [
-        InferCase::Pascal,
-        InferCase::Snake,
-        InferCase::Kebab,
-        InferCase::Camel,
-        InferCase::Scream,
-        InferCase::Cobol,
-        InferCase::Spaced,
-        InferCase::AllCaps,
-        InferCase::SafeChunk,
-    ];
-
     const TARGET_CASES: [RustCase; 6] = [
         RustCase::Pascal,
         RustCase::Snake,
@@ -612,94 +583,54 @@ mod tests {
 
     trait TestCase {
         fn input(self) -> &'static str;
-        fn expect_regular(self) -> Option<&'static str>;
         fn weird_input(self) -> &'static str;
-        fn expect_weird(self) -> Option<&'static str>;
-        fn this(self) -> InferCase;
     }
 
-    impl TestCase for InferCase {
+    impl TestCase for RustCase {
         fn input(self) -> &'static str {
             match self {
-                InferCase::Pascal => "MyStruct",
-                InferCase::Snake => "my_struct",
-                InferCase::Kebab => "my-struct",
-                InferCase::Camel => "myStruct",
-                InferCase::Scream => "MY_STRUCT",
-                InferCase::Cobol => "MY-STRUCT",
-                InferCase::Spaced => "my struct",
-                InferCase::AllCaps => "MYSTRUCT",
-                InferCase::SafeChunk => "mystruct",
-            }
-        }
-
-        fn expect_regular(self) -> Option<&'static str> {
-            match self {
-                InferCase::Pascal
-                | InferCase::Snake
-                | InferCase::Kebab
-                | InferCase::Camel
-                | InferCase::Scream
-                | InferCase::Cobol => Some(self.input()),
-                InferCase::Spaced | InferCase::AllCaps | InferCase::SafeChunk => None,
+                RustCase::Pascal => "MyStruct",
+                RustCase::Snake => "my_struct",
+                RustCase::Kebab => "my-struct",
+                RustCase::Camel => "myStruct",
+                RustCase::Scream => "MY_STRUCT",
+                RustCase::Cobol => "MY-STRUCT",
             }
         }
 
         fn weird_input(self) -> &'static str {
             match self {
-                InferCase::Pascal => "MYWeIrd ",
-                InferCase::Snake => "m_y_we_ird ",
-                InferCase::Kebab => "m-y-we-ird ",
-                InferCase::Camel => "mYWeIrd ",
-                InferCase::Scream => "M_Y_WE_IRD ",
-                InferCase::Cobol => "M-Y-WE-IRD ",
-                InferCase::Spaced => "m y we ird ",
-                InferCase::AllCaps => "MYWEIRD",
-                InferCase::SafeChunk => "myweird",
+                RustCase::Pascal => "MYWeIrd ",
+                RustCase::Snake => "m_y_we_ird ",
+                RustCase::Kebab => "m-y-we-ird ",
+                RustCase::Camel => "mYWeIrd ",
+                RustCase::Scream => "M_Y_WE_IRD ",
+                RustCase::Cobol => "M-Y-WE-IRD ",
             }
-        }
-
-        fn expect_weird(self) -> Option<&'static str> {
-            match self {
-                InferCase::Pascal
-                | InferCase::Snake
-                | InferCase::Kebab
-                | InferCase::Camel
-                | InferCase::Scream
-                | InferCase::Cobol => Some(self.weird_input()),
-                InferCase::Spaced | InferCase::AllCaps | InferCase::SafeChunk => None,
-            }
-        }
-
-        fn this(self) -> InferCase {
-            self
         }
     }
 
     #[test]
-    fn test_all() -> Result<()> {
+    fn test_all_targets() -> Result<()> {
         for input_case in TARGET_CASES {
-            for output_case in TARGET_CASES {
-                if let Some(expect_regular) = output_case.to_infer().expect_regular() {
-                    let input = input_case.to_infer().input();
-                    let case = output_case.to_infer().this();
-                    assert_eq!(
-                        expect_regular,
-                        RustCase::convert(input, output_case)?,
-                        "Failed regular conversion from {input_case:?} to {case:?}, input: '{input}'"
-                    );
-                }
-                if let Some(expect_weird) = output_case.to_infer().expect_weird() {
-                    let input = input_case.to_infer().weird_input();
-                    let case = output_case;
-                    assert_eq!(
-                        expect_weird.trim(),
-                        RustCase::convert(input, case)?,
-                        "Failed weird conversion from {input_case:?} to {case:?}, input: '{input}'"
-                    );
-                }
-                eprintln!("Done {:?} -> {:?}", input_case, output_case);
-            }
+            test_all_target_conversions(input_case.input(), input_case.weird_input())?;
+        }
+        Ok(())
+    }
+
+    fn test_all_target_conversions(input: &str, input_weird: &str) -> Result<()> {
+        let input_case = InferCase::infer(input)?;
+        for output_case in TARGET_CASES {
+            assert_eq!(
+                output_case.input(),
+                RustCase::convert(input, output_case)?,
+                "Failed regular conversion from {input_case:?} to {output_case:?}, input: '{input}'"
+            );
+            assert_eq!(
+                output_case.weird_input().trim(),
+                RustCase::convert(input_weird, output_case)?,
+                "Failed weird conversion from {input_case:?} to {output_case:?}, input: '{input}'"
+            );
         }
         Ok(())
     }
@@ -712,5 +643,12 @@ mod tests {
         assert!(InferCase::infer("_hello_").is_err());
         assert!(InferCase::infer("hello-").is_err());
         assert!(InferCase::infer("hello_").is_err());
+    }
+
+    #[test]
+    fn test_spaced() {
+        let input = "my struct";
+        let input_weird = "m y we ird ";
+        test_all_target_conversions(input, input_weird).unwrap();
     }
 }
