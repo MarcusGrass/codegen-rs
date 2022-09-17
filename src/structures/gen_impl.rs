@@ -1,6 +1,6 @@
 use crate::structures::method::Method;
 use crate::structures::{Annotations, Signature, TypeDef};
-use crate::Visibility;
+use crate::{ConstantEntity, Visibility};
 use std::fmt::Write;
 
 pub struct ImplEntity {
@@ -8,6 +8,7 @@ pub struct ImplEntity {
     implementor: Signature,
     implementing: Option<Signature>,
     type_defs: Vec<TypeDef>,
+    consts: Vec<ConstantEntity>,
     methods: Vec<Method>,
 }
 
@@ -34,6 +35,9 @@ impl ImplEntity {
                 self.implementor.generics.format_where_clause()
             )
         };
+        for cnst in &self.consts {
+            base.push_str(&cnst.format());
+        }
         for def in &self.type_defs {
             base.push_str(&def.format())
         }
@@ -54,6 +58,7 @@ impl ImplEntity {
         implementor: Signature,
         implementing: Option<Signature>,
         type_defs: Vec<TypeDef>,
+        consts: Vec<ConstantEntity>,
         methods: Vec<Method>,
     ) -> Self {
         Self {
@@ -61,6 +66,7 @@ impl ImplEntity {
             implementor,
             implementing,
             type_defs,
+            consts,
             methods,
         }
     }

@@ -268,7 +268,7 @@ impl FileBuilder {
     }
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct ConstantBuilder {
     annotations: Annotations,
     constant_type: ConstantType,
@@ -611,6 +611,7 @@ pub struct ImplBuilder {
     implementor: Signature,
     implementing: Option<Signature>,
     type_defs: Vec<TypeDef>,
+    consts: Vec<ConstantBuilder>,
     methods: Vec<MethodBuilder>,
 }
 
@@ -627,6 +628,7 @@ impl ImplBuilder {
             implementor,
             implementing: None,
             type_defs: vec![],
+            consts: vec![],
             methods: vec![],
         }
     }
@@ -638,6 +640,11 @@ impl ImplBuilder {
 
     pub fn add_type_def(mut self, type_def: TypeDef) -> Self {
         self.type_defs.push(type_def);
+        self
+    }
+
+    pub fn add_const(mut self, constant_builder: ConstantBuilder) -> Self {
+        self.consts.push(constant_builder);
         self
     }
 
@@ -697,6 +704,7 @@ impl ImplBuilder {
             self.implementor,
             self.implementing,
             self.type_defs,
+            self.consts.into_iter().map(|cb| cb.build()).collect(),
             self.methods
                 .into_iter()
                 .map(|mb| mb.build())
