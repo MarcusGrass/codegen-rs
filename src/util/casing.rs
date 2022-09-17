@@ -1,8 +1,8 @@
 use crate::errors::{Error, Result};
 
-/// A representation of a case
+/// A representation of a case that this lib can infer
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
-pub enum Case {
+pub enum InferCase {
     // MyStructsNameIsPascalCased
     Pascal,
     // my_fields_name_is_snake_cased
@@ -23,6 +23,12 @@ pub enum Case {
     SafeChunk,
 }
 
+pub enum Marker {
+    Underscore,
+    Dash,
+    Space,
+}
+
 macro_rules! bail_derive_err {
     ($input: expr, $all_upper: expr, $upper: expr, $starts_upper: expr, $underscore: expr, $dash: expr, $spaced: expr) => {
         return Err(fmt_derive_err(
@@ -37,121 +43,7 @@ macro_rules! bail_derive_err {
     };
 }
 
-impl Case {
-    pub fn convert(input: &str, to: Self) -> Result<String> {
-        let input = input.trim();
-        let case = Self::infer(input)?;
-        case.do_conversion(input, to)
-    }
-
-    pub fn convert_to_valid_rust(input: &str, to: Self) -> Result<String> {
-        let s = Self::convert(input, to)?;
-        Ok(fix_keyword(&s))
-    }
-    pub fn do_conversion(self, input: &str, to: Self) -> Result<String> {
-        let out = match self {
-            Case::Snake => match to {
-                Case::Pascal => snake_to_pascal(input),
-                Case::Kebab => snake_to_kebab(input),
-                Case::Camel => snake_to_camel(input),
-                Case::Snake => input.to_owned(),
-                Case::Cobol => snake_to_cobol(input),
-                Case::Scream => snake_to_scream(input),
-                Case::SafeChunk | Case::Spaced | Case::AllCaps => {
-                    return Err(fmt_illegal_target(input, to))
-                }
-            },
-            Case::Pascal => match to {
-                Case::Snake => pascal_to_snake(input),
-                Case::Kebab => pascal_to_kebab(input),
-                Case::Camel => de_capitalize(input),
-                Case::Pascal => input.to_string(),
-                Case::Cobol => pascal_to_cobol(input),
-                Case::Scream => pascal_to_scream(input),
-                Case::SafeChunk | Case::Spaced | Case::AllCaps => {
-                    return Err(fmt_illegal_target(input, to))
-                }
-            },
-            Case::Kebab => match &to {
-                Case::Pascal => kebab_to_pascal(input),
-                Case::Snake => kebab_to_snake(input),
-                Case::Camel => kebab_to_camel(input),
-                Case::Kebab => input.to_string(),
-                Case::Cobol => kebab_to_cobol(input),
-                Case::Scream => kebab_to_scream(input),
-                Case::SafeChunk | Case::Spaced | Case::AllCaps => {
-                    return Err(fmt_illegal_target(input, to))
-                }
-            },
-            Case::Camel => match &to {
-                Case::Pascal => capitalize(input),
-                Case::Snake => camel_to_snake(input),
-                Case::Kebab => camel_to_kebab(input),
-                Case::Camel => input.to_string(),
-                Case::Cobol => camel_to_cobol(input),
-                Case::Scream => camel_to_scream(input),
-                Case::SafeChunk | Case::Spaced | Case::AllCaps => {
-                    return Err(fmt_illegal_target(input, to))
-                }
-            },
-            Case::SafeChunk => match &to {
-                Case::Pascal => capitalize(input),
-                Case::Snake => input.to_string(),
-                Case::Camel => snake_to_camel(input),
-                Case::Kebab => input.to_string(),
-                Case::Cobol => input.to_uppercase(),
-                Case::Scream => input.to_uppercase(),
-                Case::SafeChunk | Case::Spaced | Case::AllCaps => {
-                    return Err(fmt_illegal_target(input, to))
-                }
-            },
-            Case::Spaced => match to {
-                Case::Pascal => spaced_to_pascal(input),
-                Case::Snake => spaced_to_snake(input),
-                Case::Kebab => spaced_to_kebab(input),
-                Case::Camel => spaced_to_camel(input),
-                Case::Cobol => spaced_to_cobol(input),
-                Case::Scream => spaced_to_scream(input),
-                Case::SafeChunk | Case::Spaced | Case::AllCaps => {
-                    return Err(fmt_illegal_target(input, to))
-                }
-            },
-            Case::AllCaps => match to {
-                Case::Pascal
-                | Case::Snake
-                | Case::Kebab
-                | Case::Camel
-                | Case::Scream
-                | Case::Cobol => Case::SafeChunk.do_conversion(&input.to_lowercase(), to)?,
-                Case::SafeChunk | Case::Spaced | Case::AllCaps => {
-                    return Err(fmt_illegal_target(input, to))
-                }
-            },
-            Case::Scream => match to {
-                Case::Pascal => scream_to_pascal(input),
-                Case::Snake => scream_to_snake(input),
-                Case::Kebab => scream_to_kebab(input),
-                Case::Camel => scream_to_camel(input),
-                Case::Scream => input.to_string(),
-                Case::Cobol => scream_to_cobol(input),
-                Case::SafeChunk | Case::AllCaps | Case::Spaced => {
-                    return Err(fmt_illegal_target(input, to))
-                }
-            },
-            Case::Cobol => match to {
-                Case::Pascal => cobol_to_pascal(input),
-                Case::Snake => cobol_to_snake(input),
-                Case::Kebab => cobol_to_kebab(input),
-                Case::Camel => cobol_to_camel(input),
-                Case::Scream => cobol_to_macro(input),
-                Case::Cobol => input.to_string(),
-                Case::SafeChunk | Case::AllCaps | Case::Spaced => {
-                    return Err(fmt_illegal_target(input, to))
-                }
-            },
-        };
-        Ok(out)
-    }
+impl InferCase {
     pub fn infer(input: &str) -> Result<Self> {
         let mut spaced = false;
         let mut starts_uppercase = false;
@@ -189,11 +81,11 @@ impl Case {
         }
         if all_chars_uppercased {
             if num_dashes == 0 && num_underscores == 0 && !spaced {
-                Ok(Case::AllCaps)
+                Ok(InferCase::AllCaps)
             } else if num_underscores == 0 && !spaced {
-                Ok(Case::Cobol)
+                Ok(InferCase::Cobol)
             } else if num_dashes == 0 && !spaced {
-                Ok(Case::Scream)
+                Ok(InferCase::Scream)
             } else {
                 bail_derive_err!(
                     input,
@@ -218,7 +110,7 @@ impl Case {
                         spaced
                     );
                 } else {
-                    Ok(Case::Kebab)
+                    Ok(InferCase::Kebab)
                 }
             } else if num_underscores != 0 && num_dashes == 0 {
                 if spaced {
@@ -232,7 +124,7 @@ impl Case {
                         spaced
                     );
                 } else {
-                    Ok(Case::Snake)
+                    Ok(InferCase::Snake)
                 }
             } else if num_underscores != 0 && num_dashes != 0 {
                 bail_derive_err!(
@@ -245,9 +137,9 @@ impl Case {
                     spaced
                 );
             } else if spaced {
-                Ok(Case::Spaced)
+                Ok(InferCase::Spaced)
             } else {
-                Ok(Case::SafeChunk)
+                Ok(InferCase::SafeChunk)
             }
         } else if starts_uppercase {
             if num_dashes == 0 && num_underscores == 0 {
@@ -262,7 +154,7 @@ impl Case {
                         spaced
                     );
                 } else {
-                    Ok(Case::Pascal)
+                    Ok(InferCase::Pascal)
                 }
             } else {
                 bail_derive_err!(
@@ -287,7 +179,7 @@ impl Case {
                     spaced
                 );
             } else {
-                Ok(Case::Camel)
+                Ok(InferCase::Camel)
             }
         } else {
             bail_derive_err!(
@@ -299,6 +191,122 @@ impl Case {
                 num_dashes,
                 spaced
             );
+        }
+    }
+
+    pub fn do_conversion(self, input: &str, to: RustCase) -> Result<String> {
+        let out = match self {
+            InferCase::Snake => match to {
+                RustCase::Pascal => snake_to_pascal(input),
+                RustCase::Kebab => snake_to_kebab(input),
+                RustCase::Camel => snake_to_camel(input),
+                RustCase::Snake => input.to_owned(),
+                RustCase::Cobol => snake_to_cobol(input),
+                RustCase::Scream => snake_to_scream(input),
+            },
+            InferCase::Pascal => match to {
+                RustCase::Snake => pascal_to_snake(input),
+                RustCase::Kebab => pascal_to_kebab(input),
+                RustCase::Camel => de_capitalize(input),
+                RustCase::Pascal => input.to_string(),
+                RustCase::Cobol => pascal_to_cobol(input),
+                RustCase::Scream => pascal_to_scream(input),
+            },
+            InferCase::Kebab => match &to {
+                RustCase::Pascal => kebab_to_pascal(input),
+                RustCase::Snake => kebab_to_snake(input),
+                RustCase::Camel => kebab_to_camel(input),
+                RustCase::Kebab => input.to_string(),
+                RustCase::Cobol => kebab_to_cobol(input),
+                RustCase::Scream => kebab_to_scream(input),
+            },
+            InferCase::Camel => match &to {
+                RustCase::Pascal => capitalize(input),
+                RustCase::Snake => camel_to_snake(input),
+                RustCase::Kebab => camel_to_kebab(input),
+                RustCase::Camel => input.to_string(),
+                RustCase::Cobol => camel_to_cobol(input),
+                RustCase::Scream => camel_to_scream(input),
+            },
+            InferCase::SafeChunk => match &to {
+                RustCase::Pascal => capitalize(input),
+                RustCase::Snake => input.to_string(),
+                RustCase::Camel => snake_to_camel(input),
+                RustCase::Kebab => input.to_string(),
+                RustCase::Cobol => input.to_uppercase(),
+                RustCase::Scream => input.to_uppercase(),
+            },
+            InferCase::Spaced => match to {
+                RustCase::Pascal => spaced_to_pascal(input),
+                RustCase::Snake => spaced_to_snake(input),
+                RustCase::Kebab => spaced_to_kebab(input),
+                RustCase::Camel => spaced_to_camel(input),
+                RustCase::Cobol => spaced_to_cobol(input),
+                RustCase::Scream => spaced_to_scream(input),
+            },
+            InferCase::AllCaps => {
+                let lc = &input.to_lowercase();
+                let inf = InferCase::infer(lc)?;
+                inf.do_conversion(lc, to)?
+            }
+            InferCase::Scream => match to {
+                RustCase::Pascal => scream_to_pascal(input),
+                RustCase::Snake => scream_to_snake(input),
+                RustCase::Kebab => scream_to_kebab(input),
+                RustCase::Camel => scream_to_camel(input),
+                RustCase::Scream => input.to_string(),
+                RustCase::Cobol => scream_to_cobol(input),
+            },
+            InferCase::Cobol => match to {
+                RustCase::Pascal => cobol_to_pascal(input),
+                RustCase::Snake => cobol_to_snake(input),
+                RustCase::Kebab => cobol_to_kebab(input),
+                RustCase::Camel => cobol_to_camel(input),
+                RustCase::Scream => cobol_to_macro(input),
+                RustCase::Cobol => input.to_string(),
+            },
+        };
+        Ok(out)
+    }
+}
+
+/// A representation of a case that can be output
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+pub enum RustCase {
+    // MyStructsNameIsPascalCased
+    Pascal,
+    // my_fields_name_is_snake_cased
+    Snake,
+    // my-directory-name-is-kebab-cased
+    Kebab,
+    // myJavaVarIsCamelCased
+    Camel,
+    // ALSO_KNOWN_AS_SCREAM_CASE
+    Scream,
+    // WHAT-IS-COBOL-CASE-USED-FOR?
+    Cobol,
+}
+
+impl RustCase {
+    pub fn convert(input: &str, to: Self) -> Result<String> {
+        let input = input.trim();
+        let in_case = InferCase::infer(input)?;
+        in_case.do_conversion(input, to)
+    }
+
+    pub fn convert_to_valid_rust(input: &str, to: Self) -> Result<String> {
+        let s = Self::convert(input, to)?;
+        Ok(fix_keyword(&s))
+    }
+
+    fn to_infer(self) -> InferCase {
+        match self {
+            RustCase::Pascal => InferCase::Pascal,
+            RustCase::Snake => InferCase::Snake,
+            RustCase::Kebab => InferCase::Kebab,
+            RustCase::Camel => InferCase::Camel,
+            RustCase::Scream => InferCase::Scream,
+            RustCase::Cobol => InferCase::Cobol,
         }
     }
 }
@@ -314,15 +322,6 @@ fn fmt_derive_err(
     has_space: bool,
 ) -> Error {
     Error::CaseDerive(input.to_string(), format!("Failed to derive case: all_chars_uppercase = {all_upper} uppercase chars = {num_uppercases}, starts uppercase = {starts_upper}, has underscore = {num_underscores}, has dash = {num_dashes}, has space = {has_space}"))
-}
-
-#[inline]
-fn fmt_illegal_target(input: &str, target: Case) -> Error {
-    Error::CaseConvert(
-        input.to_string(),
-        format!("{target:?}"),
-        "Illegal target".to_owned(),
-    )
 }
 
 #[inline]
@@ -567,12 +566,12 @@ mod tests {
     use super::*;
 
     fn assert_expected_safe_chunk(expect: &str) -> Result<()> {
-        assert_eq!(expect.trim(), Case::convert(expect, Case::Camel)?);
-        assert_eq!(expect.trim(), Case::convert(expect, Case::Kebab)?);
-        assert_eq!(expect.trim(), Case::convert(expect, Case::Snake)?);
+        assert_eq!(expect.trim(), RustCase::convert(expect, RustCase::Camel)?);
+        assert_eq!(expect.trim(), RustCase::convert(expect, RustCase::Kebab)?);
+        assert_eq!(expect.trim(), RustCase::convert(expect, RustCase::Snake)?);
         assert_eq!(
             capitalize(expect.trim()),
-            Case::convert(expect, Case::Pascal)?
+            RustCase::convert(expect, RustCase::Pascal)?
         );
         Ok(())
     }
@@ -585,30 +584,30 @@ mod tests {
 
         // No mixed stuff
         for case in TARGET_CASES {
-            assert!(Case::convert("my - mixed _ str", case).is_err());
+            assert!(RustCase::convert("my - mixed _ str", case).is_err());
         }
         Ok(())
     }
 
-    const ALL_CASES: [Case; 9] = [
-        Case::Pascal,
-        Case::Snake,
-        Case::Kebab,
-        Case::Camel,
-        Case::Scream,
-        Case::Cobol,
-        Case::Spaced,
-        Case::AllCaps,
-        Case::SafeChunk,
+    const ALL_CASES: [InferCase; 9] = [
+        InferCase::Pascal,
+        InferCase::Snake,
+        InferCase::Kebab,
+        InferCase::Camel,
+        InferCase::Scream,
+        InferCase::Cobol,
+        InferCase::Spaced,
+        InferCase::AllCaps,
+        InferCase::SafeChunk,
     ];
 
-    const TARGET_CASES: [Case; 6] = [
-        Case::Pascal,
-        Case::Snake,
-        Case::Kebab,
-        Case::Camel,
-        Case::Cobol,
-        Case::Scream,
+    const TARGET_CASES: [RustCase; 6] = [
+        RustCase::Pascal,
+        RustCase::Snake,
+        RustCase::Kebab,
+        RustCase::Camel,
+        RustCase::Cobol,
+        RustCase::Scream,
     ];
 
     trait TestCase {
@@ -616,87 +615,86 @@ mod tests {
         fn expect_regular(self) -> Option<&'static str>;
         fn weird_input(self) -> &'static str;
         fn expect_weird(self) -> Option<&'static str>;
-        fn this(self) -> Case;
+        fn this(self) -> InferCase;
     }
 
-    impl TestCase for Case {
+    impl TestCase for InferCase {
         fn input(self) -> &'static str {
             match self {
-                Case::Pascal => "MyStruct",
-                Case::Snake => "my_struct",
-                Case::Kebab => "my-struct",
-                Case::Camel => "myStruct",
-                Case::Scream => "MY_STRUCT",
-                Case::Cobol => "MY-STRUCT",
-                Case::Spaced => "my struct",
-                Case::AllCaps => "MYSTRUCT",
-                Case::SafeChunk => "mystruct",
+                InferCase::Pascal => "MyStruct",
+                InferCase::Snake => "my_struct",
+                InferCase::Kebab => "my-struct",
+                InferCase::Camel => "myStruct",
+                InferCase::Scream => "MY_STRUCT",
+                InferCase::Cobol => "MY-STRUCT",
+                InferCase::Spaced => "my struct",
+                InferCase::AllCaps => "MYSTRUCT",
+                InferCase::SafeChunk => "mystruct",
             }
         }
 
         fn expect_regular(self) -> Option<&'static str> {
             match self {
-                Case::Pascal
-                | Case::Snake
-                | Case::Kebab
-                | Case::Camel
-                | Case::Scream
-                | Case::Cobol => Some(self.input()),
-                Case::Spaced | Case::AllCaps | Case::SafeChunk => None,
+                InferCase::Pascal
+                | InferCase::Snake
+                | InferCase::Kebab
+                | InferCase::Camel
+                | InferCase::Scream
+                | InferCase::Cobol => Some(self.input()),
+                InferCase::Spaced | InferCase::AllCaps | InferCase::SafeChunk => None,
             }
         }
 
         fn weird_input(self) -> &'static str {
             match self {
-                Case::Pascal => "MYWeIrd ",
-                Case::Snake => "m_y_we_ird ",
-                Case::Kebab => "m-y-we-ird ",
-                Case::Camel => "mYWeIrd ",
-                Case::Scream => "M_Y_WE_IRD ",
-                Case::Cobol => "M-Y-WE-IRD ",
-                Case::Spaced => "m y we ird ",
-                Case::AllCaps => "MYWEIRD",
-                Case::SafeChunk => "myweird",
+                InferCase::Pascal => "MYWeIrd ",
+                InferCase::Snake => "m_y_we_ird ",
+                InferCase::Kebab => "m-y-we-ird ",
+                InferCase::Camel => "mYWeIrd ",
+                InferCase::Scream => "M_Y_WE_IRD ",
+                InferCase::Cobol => "M-Y-WE-IRD ",
+                InferCase::Spaced => "m y we ird ",
+                InferCase::AllCaps => "MYWEIRD",
+                InferCase::SafeChunk => "myweird",
             }
         }
 
         fn expect_weird(self) -> Option<&'static str> {
             match self {
-                Case::Pascal
-                | Case::Snake
-                | Case::Kebab
-                | Case::Camel
-                | Case::Scream
-                | Case::Cobol => Some(self.weird_input()),
-                Case::Spaced | Case::AllCaps | Case::SafeChunk => None,
+                InferCase::Pascal
+                | InferCase::Snake
+                | InferCase::Kebab
+                | InferCase::Camel
+                | InferCase::Scream
+                | InferCase::Cobol => Some(self.weird_input()),
+                InferCase::Spaced | InferCase::AllCaps | InferCase::SafeChunk => None,
             }
         }
 
-        fn this(self) -> Case {
+        fn this(self) -> InferCase {
             self
         }
     }
 
     #[test]
     fn test_all() -> Result<()> {
-        for input_case in ALL_CASES {
+        for input_case in TARGET_CASES {
             for output_case in TARGET_CASES {
-                eprintln!("Try {input_case:?} -> {output_case:?}");
-                if let Some(expect_regular) = output_case.expect_regular() {
-                    let input = input_case.input();
-                    let case = output_case.this();
+                if let Some(expect_regular) = output_case.to_infer().expect_regular() {
+                    let input = input_case.to_infer().input();
+                    let case = output_case.to_infer().this();
                     assert_eq!(
                         expect_regular,
-                        Case::convert(input, case)?,
+                        RustCase::convert(input, output_case)?,
                         "Failed regular conversion from {input_case:?} to {case:?}, input: '{input}'"
                     );
                 }
-                if let Some(expect_weird) = output_case.expect_weird() {
-                    let input = input_case.weird_input();
-                    let case = output_case.this();
+                if let Some(expect_weird) = output_case.to_infer().expect_weird() {
+                    let input = input_case.to_infer().weird_input();
+                    let case = output_case;
                     assert_eq!(
                         expect_weird.trim(),
-                        Case::convert(input, case)?,
+                        RustCase::convert(input, case)?,
                         "Failed weird conversion from {input_case:?} to {case:?}, input: '{input}'"
                     );
                 }
@@ -708,11 +706,11 @@ mod tests {
 
     #[test]
     fn infer_bad() {
-        assert!(Case::infer("-hello").is_err());
-        assert!(Case::infer("_hello").is_err());
-        assert!(Case::infer("-hello-").is_err());
-        assert!(Case::infer("_hello_").is_err());
-        assert!(Case::infer("hello-").is_err());
-        assert!(Case::infer("hello_").is_err());
+        assert!(InferCase::infer("-hello").is_err());
+        assert!(InferCase::infer("_hello").is_err());
+        assert!(InferCase::infer("-hello-").is_err());
+        assert!(InferCase::infer("_hello_").is_err());
+        assert!(InferCase::infer("hello-").is_err());
+        assert!(InferCase::infer("hello_").is_err());
     }
 }
