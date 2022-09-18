@@ -239,12 +239,15 @@ impl RustType {
     }
 
     pub fn format(&self) -> String {
-        if let Some(package) = &self.package_spec {
-            format!("{}::{}", package, self.name)
-        } else if let Some(wrapped) = &self.wrapped {
-            format!("{}<{}>", self.name, wrapped.format())
+        let begin = if let Some(package) = &self.package_spec {
+            format!("{}::", package)
         } else {
-            self.name.clone()
+            String::new()
+        };
+        if let Some(wrapped) = &self.wrapped {
+            format!("{begin}{}<{}>", self.name, wrapped.format())
+        } else {
+            format!("{begin}{}", self.name)
         }
     }
 }

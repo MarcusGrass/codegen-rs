@@ -47,7 +47,7 @@ impl InferCase {
         let mut num_underscores = 0;
         for (ind, char) in input.chars().enumerate() {
             // No spaces in names
-            if ind == 0 && !char.is_alphanumeric() {
+            if ind == 0 && !char.is_alphabetic() {
                 return Err(Error::CaseDerive(
                     input.to_string(),
                     format!("Starts with illegal character {char}"),
@@ -57,10 +57,11 @@ impl InferCase {
                     input.to_string(),
                     format!("Ends with illegal character {char}"),
                 ));
-            } else if char.is_alphanumeric() && !char.is_uppercase() {
+            } else if char.is_alphanumeric() && !char.is_numeric() && !char.is_uppercase() {
                 all_chars_uppercased = false;
             }
-            if char.is_uppercase() {
+            if char.is_numeric() && ind == 0 {}
+            if !char.is_numeric() && char.is_uppercase() {
                 num_uppercases += 1;
                 if ind == 0 {
                     starts_uppercase = true;
