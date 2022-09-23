@@ -1,3 +1,4 @@
+use std::fmt::Write;
 use crate::structures::generics::Generics;
 use crate::structures::visibility::Visibility;
 use crate::structures::{Annotations, ComponentSignature, Derives};
@@ -15,7 +16,7 @@ pub struct StructEntity {
 #[derive(Debug)]
 pub enum StructKind {
     Fields(Vec<Field>),
-    Container(Vec<RustType>),
+    Container(Vec<(Visibility, RustType)>),
 }
 
 impl StructEntity {
@@ -66,11 +67,11 @@ impl StructEntity {
             }
             StructKind::Container(c) => {
                 let mut contained = String::new();
-                for (ind, t) in c.iter().enumerate() {
+                for (ind, (v, r)) in c.iter().enumerate() {
                     if ind != 0 {
                         contained.push_str(", ");
                     }
-                    contained.push_str(&t.format());
+                    let _ = contained.write_fmt(format_args!("{}{}", v.format(), r.format()));
                 }
                 format!(
                     "{}{}{}struct {}({});\n",

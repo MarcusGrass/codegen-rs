@@ -460,7 +460,7 @@ pub struct ContainerStructBuilder {
     derives: Derives,
     visibility: Visibility,
     pub name: String,
-    contained_types: Vec<RustType>,
+    contained_types: Vec<(Visibility, RustType)>,
 }
 
 impl ContainerStructBuilder {
@@ -478,8 +478,8 @@ impl ContainerStructBuilder {
         Self::new(&signature.rust_type.name)
     }
 
-    pub fn add_contained(mut self, rust_type: RustType) -> Self {
-        self.contained_types.push(rust_type);
+    pub fn add_contained(mut self, visibility: Visibility, rust_type: RustType) -> Self {
+        self.contained_types.push((visibility, rust_type));
         self
     }
     add_annotation!();
