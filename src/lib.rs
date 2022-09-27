@@ -14,7 +14,9 @@ use std::path::Path;
 pub mod structures;
 #[macro_use]
 mod util;
+
 pub use util::casing::{fix_keyword, InferCase, RustCase};
+
 mod errors;
 
 pub trait HasAnnotationBuilder {
@@ -104,6 +106,12 @@ where
     }
 }
 
+impl ToSourceFilePart for String {
+    fn format_source_file_part(&self) -> String {
+        self.clone()
+    }
+}
+
 pub struct FileBuilder {
     name: String,
     annotations: Annotations,
@@ -115,6 +123,7 @@ pub struct FileBuilder {
     structs: Vec<OrderedFormat<StructBuilder>>,
     container_structs: Vec<OrderedFormat<ContainerStructBuilder>>,
     implementations: Vec<OrderedFormat<ImplBuilder>>,
+    macro_calls: Vec<OrderedFormat<String>>,
     parts: usize,
 }
 
@@ -131,6 +140,7 @@ impl FileBuilder {
             structs: vec![],
             container_structs: vec![],
             implementations: vec![],
+            macro_calls: vec![],
             parts: 0,
         }
     }
@@ -218,6 +228,13 @@ impl FileBuilder {
         self
     }
 
+    pub fn add_any(mut self, any: impl Into<String>) -> Self {
+        self.macro_calls
+            .push(OrderedFormat::new(self.parts, any.into()));
+        self.parts += 1;
+        self
+    }
+
     pub fn format_file(&self) -> String {
         self.format_submodule(&[])
     }
@@ -254,6 +271,11 @@ impl FileBuilder {
             )
             .chain(
                 self.implementations
+                    .iter()
+                    .map(|i| (i.order, i.value.format_source_file_part())),
+            )
+            .chain(
+                self.macro_calls
                     .iter()
                     .map(|i| (i.order, i.value.format_source_file_part())),
             )

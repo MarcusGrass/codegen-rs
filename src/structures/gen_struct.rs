@@ -1,8 +1,8 @@
-use std::fmt::Write;
 use crate::structures::generics::Generics;
 use crate::structures::visibility::Visibility;
 use crate::structures::{Annotations, ComponentSignature, Derives};
 use crate::{NamedComponentSignature, RustType};
+use std::fmt::Write;
 
 #[derive(Debug)]
 pub struct StructEntity {
