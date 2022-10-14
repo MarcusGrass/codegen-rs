@@ -274,6 +274,11 @@ impl FileBuilder {
                     .map(|i| (i.order, i.value.format_source_file_part())),
             )
             .chain(
+                self.traits
+                    .iter()
+                    .map(|i| (i.order, i.value.format_source_file_part())),
+            )
+            .chain(
                 self.container_structs
                     .iter()
                     .map(|i| (i.order, i.value.format_source_file_part())),
