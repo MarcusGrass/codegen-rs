@@ -14,7 +14,7 @@ use std::path::Path;
 pub mod structures;
 #[macro_use]
 mod util;
-
+use crate::structures::gen_trait::TraitEntity;
 pub use util::casing::{fix_keyword, InferCase, RustCase};
 
 mod errors;
@@ -121,6 +121,7 @@ pub struct FileBuilder {
     functions: Vec<OrderedFormat<FunctionBuilder>>,
     enums: Vec<OrderedFormat<EnumBuilder>>,
     structs: Vec<OrderedFormat<StructBuilder>>,
+    traits: Vec<OrderedFormat<TraitBuilder>>,
     container_structs: Vec<OrderedFormat<ContainerStructBuilder>>,
     implementations: Vec<OrderedFormat<ImplBuilder>>,
     macro_calls: Vec<OrderedFormat<String>>,
@@ -138,6 +139,7 @@ impl FileBuilder {
             functions: vec![],
             enums: vec![],
             structs: vec![],
+            traits: vec![],
             container_structs: vec![],
             implementations: vec![],
             macro_calls: vec![],
@@ -217,6 +219,13 @@ impl FileBuilder {
     pub fn add_enum(mut self, enum_builder: EnumBuilder) -> Self {
         self.enums
             .push(OrderedFormat::new(self.parts, enum_builder));
+        self.parts += 1;
+        self
+    }
+
+    pub fn add_trait(mut self, trait_bulder: TraitBuilder) -> Self {
+        self.traits
+            .push(OrderedFormat::new(self.parts, trait_bulder));
         self.parts += 1;
         self
     }
@@ -473,6 +482,56 @@ impl EnumBuilder {
             self.name,
             self.members,
         )
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct TraitBuilder {
+    annotations: Annotations,
+    trait_type: Signature,
+    visibility: Visibility,
+    methods: Vec<MethodBuilder>,
+    types: Vec<String>,
+}
+
+impl TraitBuilder {
+    pub fn new(signature: Signature) -> Self {
+        Self {
+            annotations: Annotations::empty(),
+            trait_type: signature,
+            visibility: Visibility::Private,
+            methods: vec![],
+            types: vec![],
+        }
+    }
+
+    add_annotation!();
+    set_visibility!();
+
+    pub fn add_method(mut self, method_builder: MethodBuilder) -> Self {
+        self.methods.push(method_builder);
+        self
+    }
+
+    pub fn add_type(mut self, ty: impl Into<String>) -> Self {
+        self.types.push(ty.into());
+        self
+    }
+
+    pub fn build(self) -> TraitEntity {
+        TraitEntity::new(
+            self.annotations,
+            self.trait_type,
+            self.visibility,
+            self.methods.into_iter().map(MethodBuilder::build).collect(),
+            self.types,
+        )
+    }
+}
+
+impl ToSourceFilePart for TraitBuilder {
+    fn format_source_file_part(&self) -> String {
+        self.clone().build().format()
     }
 }
 
@@ -743,7 +802,7 @@ pub struct MethodBuilder {
     self_ownership: Option<Ownership>,
     name: String,
     args: Vec<Argument>,
-    body: String,
+    body: Option<String>,
     return_type: Option<ComponentSignature>,
 }
 
@@ -756,7 +815,7 @@ impl MethodBuilder {
             self_ownership: None,
             name: name.into(),
             args: vec![],
-            body: "".to_string(),
+            body: Some("".to_string()),
             return_type: None,
         }
     }
@@ -769,7 +828,16 @@ impl MethodBuilder {
         self
     }
     add_argument!();
-    set_body!();
+
+    pub fn set_body(mut self, body: impl Into<String>) -> Self {
+        self.body = Some(body.into());
+        self
+    }
+    pub fn set_trait_no_body(mut self) -> Self {
+        self.body = None;
+        self
+    }
+
     set_return_type!();
 
     fn build(self) -> Method {

@@ -77,7 +77,7 @@ pub struct Method {
     args: Vec<Argument>,
     // Generics we don't need to specify in where/diamond type
     pub(crate) container_inherited_generics: Generics,
-    body: String,
+    body: Option<String>,
     return_type: Option<ComponentSignature>,
 }
 
@@ -137,7 +137,7 @@ impl Method {
             .unwrap_or_default();
 
         let mut method_base = format!(
-            "{}{}{}fn {}{}({}{}){} {}{{\n",
+            "{}{}{}fn {}{}({}{}){} {}",
             self.annotations.format(),
             self.visibility,
             self.synchronicity.format(),
@@ -148,8 +148,14 @@ impl Method {
             ret,
             generics.format_where_clause(),
         );
-        method_base.push_str(&self.body.to_string());
-        method_base.push_str("\n}\n");
+        if let Some(body) = self.body.as_ref() {
+            method_base.push_str("{\n");
+            method_base.push_str(&body);
+            method_base.push_str("\n}\n");
+        } else {
+            method_base.push_str(";\n");
+        }
+
         method_base
     }
 
@@ -162,7 +168,7 @@ impl Method {
         name: impl Into<String>,
         args: Vec<Argument>,
         container_inherited_generics: Generics,
-        body: impl Into<String>,
+        body: Option<impl Into<String>>,
         return_type: Option<ComponentSignature>,
     ) -> Self {
         Self {
@@ -173,7 +179,7 @@ impl Method {
             name: name.into(),
             args,
             container_inherited_generics,
-            body: body.into(),
+            body: body.map(|i| i.into()),
             return_type,
         }
     }

@@ -187,6 +187,7 @@ fn implement_self() {
         my_struct.clone(),
         None,
         vec![],
+        vec![],
         vec![
             Method::new(
                 Annotations::new(vec![Annotation::new("cfg(feature = \"debug\"")]),
@@ -196,7 +197,7 @@ fn implement_self() {
                 "do_thing",
                 vec![],
                 Generics::default(),
-                "println(\"{}\", self);",
+                Some("println(\"{}\", self);"),
                 None,
             ),
             Method::new(
@@ -213,7 +214,7 @@ fn implement_self() {
                     ),
                 )],
                 Generics::default(),
-                "self.num = num;",
+                Some("self.num = num;"),
                 None,
             ),
             Method::new(
@@ -242,7 +243,7 @@ fn implement_self() {
                     ),
                 ],
                 Generics::default(),
-                "self.def = new_generic;\nself.other_thing = new_generic.do_thing();\nself",
+                Some("self.def = new_generic;\nself.other_thing = new_generic.do_thing();\nself"),
                 Some(my_struct.into()),
             ),
         ],
@@ -268,6 +269,7 @@ fn implement_for() {
             "Item",
             ComponentSignature::Signature(my_struct),
         ))],
+        vec![],
         vec![Method::new(
             Annotations::empty(),
             Visibility::Private,
@@ -276,7 +278,7 @@ fn implement_for() {
             "next",
             vec![],
             Generics::default(),
-            "todo!();",
+            Some("todo!();"),
             Some(ComponentSignature::Signature(Signature::generic(
                 RustType::in_scope("Option"),
                 Generics::multiple(vec![Generic::unbounded("T")]),

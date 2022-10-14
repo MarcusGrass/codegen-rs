@@ -7,6 +7,7 @@ pub mod gen_const;
 pub mod gen_enum;
 pub mod gen_impl;
 pub mod gen_struct;
+pub mod gen_trait;
 pub mod generics;
 pub mod method;
 pub mod visibility;
