@@ -337,19 +337,26 @@ impl Derives {
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Module {
     visibility: Visibility,
+    annotations: Annotations,
     name: String,
 }
 
 impl Module {
-    pub fn new(visibility: Visibility, name: impl Into<String>) -> Self {
+    pub fn new(visibility: Visibility, name: impl Into<String>, annotations: Annotations) -> Self {
         Self {
             visibility,
             name: name.into(),
+            annotations,
         }
     }
 
     pub fn format(&self) -> String {
-        format!("{}mod {};\n", self.visibility, self.name)
+        format!(
+            "{}{}mod {};\n",
+            self.annotations.format(),
+            self.visibility,
+            self.name
+        )
     }
 }
 #[cfg(test)]

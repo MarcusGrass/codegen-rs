@@ -32,6 +32,7 @@ pub struct ModuleBuilder {
 pub struct ModuleFile {
     visibility: Visibility,
     builder: FileBuilder,
+    annotations: Annotations,
 }
 
 pub struct Submodule {
@@ -48,10 +49,16 @@ impl ModuleBuilder {
         }
     }
 
-    pub fn add_module_file(mut self, visibility: Visibility, file_builder: FileBuilder) -> Self {
+    pub fn add_module_file(
+        mut self,
+        visibility: Visibility,
+        file_builder: FileBuilder,
+        annotations: Annotations,
+    ) -> Self {
         self.module_files.push(ModuleFile {
             visibility,
             builder: file_builder,
+            annotations,
         });
         self
     }
@@ -71,11 +78,19 @@ impl ModuleBuilder {
                 root.as_ref().join(format!("{}.rs", file.builder.name)),
                 file.builder.format_file(),
             )?;
-            modules.push(Module::new(file.visibility, &file.builder.name));
+            modules.push(Module::new(
+                file.visibility,
+                &file.builder.name,
+                file.annotations.clone(),
+            ));
         }
         for mut submod in self.submodules {
             let mod_name_ref = &submod.builder.mod_file.name;
-            modules.push(Module::new(submod.visibility, mod_name_ref));
+            modules.push(Module::new(
+                submod.visibility,
+                mod_name_ref,
+                Annotations::empty(),
+            ));
             let new_path = root.as_ref().join(mod_name_ref);
             std::fs::create_dir_all(&new_path)?;
             submod.builder.mod_file.name = "mod".to_owned();
