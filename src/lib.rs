@@ -508,7 +508,8 @@ impl EnumBuilder {
 #[derive(Debug, Clone)]
 pub struct TraitBuilder {
     annotations: Annotations,
-    trait_type: Signature,
+    pub(crate) trait_type: Signature,
+    super_traits: Vec<Signature>,
     visibility: Visibility,
     methods: Vec<MethodBuilder>,
     types: Vec<String>,
@@ -519,6 +520,7 @@ impl TraitBuilder {
         Self {
             annotations: Annotations::empty(),
             trait_type: signature,
+            super_traits: vec![],
             visibility: Visibility::Private,
             methods: vec![],
             types: vec![],
@@ -538,10 +540,16 @@ impl TraitBuilder {
         self
     }
 
+    pub fn add_super_trait(mut self, signature: Signature) -> Self {
+        self.super_traits.push(signature);
+        self
+    }
+
     pub fn build(self) -> TraitEntity {
         TraitEntity::new(
             self.annotations,
             self.trait_type,
+            self.super_traits,
             self.visibility,
             self.methods.into_iter().map(MethodBuilder::build).collect(),
             self.types,
@@ -576,7 +584,7 @@ impl ContainerStructBuilder {
     }
 
     pub fn new_from_signature(signature: &Signature) -> Self {
-        Self::new(&signature.rust_type.name)
+        Self::new(&signature.rust_type().as_ref().unwrap().name)
     }
 
     pub fn add_contained(mut self, visibility: Visibility, rust_type: RustType) -> Self {
@@ -631,7 +639,7 @@ impl StructBuilder {
     }
 
     pub fn new_from_signature(signature: &Signature) -> Self {
-        Self::new(&signature.rust_type.name)
+        Self::new(&signature.rust_type().unwrap().name)
     }
 
     add_annotation!();

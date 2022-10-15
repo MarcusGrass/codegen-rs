@@ -17,7 +17,7 @@ fn main() {
     ModuleBuilder::new(
         FileBuilder::new("main")
             .add_function(FunctionBuilder::new("main")
-                .set_body(format!("let {my_val} = {}{{ {my_val}: {my_val_value} }};\nassert_eq!({my_val_value}, {my_val}.get_val());\nprintln!(\"{my_val} is {my_val_value}!\");", my_struct.format_diamond_typed()))
+                .set_body(format!("let {my_val} = {}{{ {my_val}: {my_val_value} }};\nassert_eq!({my_val_value}, {my_val}.get_val());\nprintln!(\"{my_val} is {my_val_value}!\");", my_struct.format()))
             )
     ).add_submodule(Visibility::Private, ModuleBuilder::new(
         FileBuilder::new(my_mod)

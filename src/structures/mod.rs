@@ -73,32 +73,60 @@ impl Display for Ownership {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
-pub struct Signature {
-    pub rust_type: RustType,
-    generics: Generics,
+pub enum Signature {
+    BoundedType(RustType, Generics),
+    SingleGeneric(Generics),
 }
 
 impl Signature {
-    pub fn generic(rust_type: RustType, generics: Generics) -> Self {
-        Self {
-            rust_type,
-            generics,
-        }
+    pub fn generic_container(rust_type: RustType, generics: Generics) -> Self {
+        Self::BoundedType(rust_type, generics)
     }
 
     pub fn simple(rust_type: RustType) -> Self {
-        Self {
-            rust_type,
-            generics: Generics::default(),
+        Self::BoundedType(rust_type, Generics::default())
+    }
+
+    pub fn simple_generic(generic: Generic) -> Self {
+        Self::SingleGeneric(Generics::Single(generic))
+    }
+
+    pub(crate) fn rust_type(&self) -> Option<&RustType> {
+        if let Self::BoundedType(rt, _) = self {
+            Some(rt)
+        } else {
+            None
         }
     }
 
-    pub fn format_diamond_typed(&self) -> String {
-        format!(
-            "{}{}",
-            self.rust_type.format(),
-            self.generics.format_diamond_typed()
-        )
+    pub(crate) fn get_any_alias(&self) -> String {
+        match self {
+            Signature::BoundedType(rt, _) => rt.name.clone(),
+            Signature::SingleGeneric(g) => g.format(),
+        }
+    }
+
+    pub fn get_generics(&self) -> Generics {
+        match self {
+            Signature::BoundedType(_, g) | Signature::SingleGeneric(g) => g.clone(),
+        }
+    }
+
+    pub fn get_associated_generics(&self) -> Generics {
+        if let Self::BoundedType(_, g) = self {
+            g.clone()
+        } else {
+            Generics::default()
+        }
+    }
+
+    pub fn format(&self) -> String {
+        match self {
+            Signature::BoundedType(rt, g) => {
+                format!("{}{}", rt.format(), g.format())
+            }
+            Signature::SingleGeneric(g) => g.format(),
+        }
     }
 }
 
@@ -117,13 +145,7 @@ impl From<Signature> for ComponentSignature {
 impl ComponentSignature {
     fn format(&self) -> String {
         match self {
-            ComponentSignature::Signature(s) => {
-                format!(
-                    "{}{}",
-                    s.rust_type.format(),
-                    s.generics.format_diamond_typed()
-                )
-            }
+            ComponentSignature::Signature(s) => s.format(),
             ComponentSignature::Generic(g) => g.alias.clone(),
         }
     }
@@ -406,8 +428,8 @@ mod tests {
     #[test]
     fn signature_format_typed() {
         let signature = Signature::simple(RustType::in_scope("Debug"));
-        assert_eq!("Debug", &signature.format_diamond_typed());
-        let signature = Signature::generic(
+        assert_eq!("Debug", &signature.format());
+        let signature = Signature::generic_container(
             RustType::from_package("std::collections", "HashMap"),
             Generics::multiple(vec![
                 Generic::bounded(
@@ -420,10 +442,7 @@ mod tests {
                 Generic::unbounded("V"),
             ]),
         );
-        assert_eq!(
-            "std::collections::HashMap<K, V>",
-            &signature.format_diamond_typed()
-        );
+        assert_eq!("std::collections::HashMap<K, V>", &signature.format());
     }
 
     #[test]

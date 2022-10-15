@@ -44,13 +44,13 @@ impl StructEntity {
                     fields
                         .iter()
                         .map(|f| match &f.named_component_signature.component_signature {
-                            ComponentSignature::Signature(s) => s.generics.clone(),
+                            ComponentSignature::Signature(s) => s.get_generics(),
                             ComponentSignature::Generic(g) => Generics::multiple(vec![g.clone()]),
                         })
                 {
                     union = union.union(&generics);
                 }
-                let diamond_typed = union.format_diamond_typed();
+                let diamond_typed = union.format();
                 let bounds = union.format_where_clause();
                 let mut base = format!(
                     "{}{}{}struct {}{diamond_typed} {bounds}{{\n",

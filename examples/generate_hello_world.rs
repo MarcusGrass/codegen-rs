@@ -10,14 +10,14 @@ use codegen_rs::{
 fn main() {
     let my_custom_iterator_type = RustType::in_scope("MyIterator");
     let generic_alias = "T";
-    let my_custom_iterator = Signature::generic(
+    let my_custom_iterator = Signature::generic_container(
         my_custom_iterator_type.clone(),
         Generic::unbounded(generic_alias).into_generics(),
     );
     let rust_vec = RustType::in_scope("Vec");
     let vec_signature = NamedComponentSignature::new(
         "inner",
-        ComponentSignature::Signature(Signature::generic(
+        ComponentSignature::Signature(Signature::generic_container(
             rust_vec,
             Generics::single_unbounded(generic_alias),
         )),
@@ -41,7 +41,7 @@ fn main() {
             .add_type_def_unbounded_generic("Item", generic_alias)
             .implement_for(Signature::simple(RustType::in_scope(iterator)))
             .add_method(MethodBuilder::new("next")
-                .set_return_type(ComponentSignature::Signature(Signature::generic(RustType::in_scope("Option"), Generic::unbounded(generic_alias).into_generics())))
+                .set_return_type(ComponentSignature::Signature(Signature::generic_container(RustType::in_scope("Option"), Generic::unbounded(generic_alias).into_generics())))
                 .set_self_ownership(Ownership::MutRef)
                 .set_body("return self.inner.pop();")
             )

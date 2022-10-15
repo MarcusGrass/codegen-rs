@@ -2,35 +2,45 @@ use crate::structures::RustType;
 use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 
-#[derive(Debug, Clone, Eq, PartialEq, Default)]
-pub struct Generics {
-    pub(crate) generics: Vec<Generic>,
+#[derive(Debug, Clone, Eq, PartialEq)]
+pub enum Generics {
+    Associated(Vec<Generic>),
+    Single(Generic),
+}
+
+impl Default for Generics {
+    fn default() -> Self {
+        Self::Associated(vec![])
+    }
 }
 
 impl Generics {
     pub fn multiple(generics: Vec<Generic>) -> Self {
-        Self { generics }
+        Self::Associated(generics)
     }
 
     pub fn single(generic: Generic) -> Self {
-        Self {
-            generics: vec![generic],
-        }
+        Self::Associated(vec![generic])
     }
 
     pub fn single_unbounded(alias: impl Into<String>) -> Self {
-        Self {
-            generics: vec![Generic::unbounded(alias)],
+        Self::Associated(vec![Generic::unbounded(alias)])
+    }
+
+    pub(crate) fn get_generics(&self) -> Vec<Generic> {
+        match self {
+            Generics::Associated(a) => a.clone(),
+            Generics::Single(s) => vec![s.clone()],
         }
     }
 
     pub fn format_where_clause(&self) -> String {
         let mut base = String::new();
-        if self.generics.is_empty() {
+        if self.get_generics().is_empty() {
             base
         } else {
             let sign = self
-                .generics
+                .get_generics()
                 .iter()
                 .filter(|gen| !gen.bounds.bounds.is_empty())
                 .map(|gen| gen.format_bounded())
@@ -46,13 +56,19 @@ impl Generics {
         }
     }
 
-    pub fn format_diamond_typed(&self) -> String {
+    pub fn format(&self) -> String {
+        match self {
+            Generics::Associated(a) => Self::format_diamond_typed(&a),
+            Generics::Single(s) => s.alias.clone(),
+        }
+    }
+
+    fn format_diamond_typed(generics: &[Generic]) -> String {
         let mut base = String::new();
-        if self.generics.is_empty() {
+        if generics.is_empty() {
             base
         } else {
-            let sign = self
-                .generics
+            let sign = generics
                 .iter()
                 .map(|gen| gen.format_diamond_typed())
                 .collect::<Vec<String>>()
@@ -69,7 +85,11 @@ impl Generics {
         // TODO: Horribly inefficient
         let mut signatures: HashMap<String, (usize, Vec<Vec<Bound>>)> = HashMap::new();
         let mut it = 0;
-        for generic in self.generics.iter().chain(other.generics.iter()) {
+        for generic in self
+            .get_generics()
+            .iter()
+            .chain(other.get_generics().iter())
+        {
             match signatures.entry(generic.alias.clone()) {
                 Entry::Occupied(mut o) => {
                     let mut_ref = o.get_mut();

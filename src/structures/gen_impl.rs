@@ -14,25 +14,28 @@ pub struct ImplEntity {
 
 impl ImplEntity {
     pub fn format(&self) -> String {
-        let diamond = self.implementor.generics.format_diamond_typed();
-        let container_owned = self.implementor.generics.clone();
+        let diamond = self.implementor.get_associated_generics().format();
+        let container_owned = self.implementor.get_generics().clone();
         let mut base = if let Some(implementing) = &self.implementing {
-            let container_owned = self.implementor.generics.union(&implementing.generics);
-            let union_diamond = container_owned.format_diamond_typed();
-            let impl_diamond = implementing.generics.format_diamond_typed();
+            let container_owned = self
+                .implementor
+                .get_generics()
+                .union(&implementing.get_generics());
+            let union_diamond = container_owned.format();
+            let impl_diamond = implementing.get_generics().format();
             format!(
                 "{}impl{union_diamond} {}{impl_diamond} for {}{diamond} {} {{\n",
                 self.annotations.format(),
-                implementing.rust_type.format(),
-                self.implementor.rust_type.format(),
+                implementing.format(),
+                self.implementor.format(),
                 container_owned.format_where_clause()
             )
         } else {
             format!(
                 "{}impl{diamond} {}{diamond} {}{{\n",
                 self.annotations.format(),
-                self.implementor.rust_type.format(),
-                self.implementor.generics.format_where_clause()
+                self.implementor.get_any_alias(),
+                self.implementor.get_generics().format_where_clause()
             )
         };
         for cnst in &self.consts {

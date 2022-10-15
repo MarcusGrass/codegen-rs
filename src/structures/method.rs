@@ -20,7 +20,7 @@ impl FunctionEntity {
         for arg in &self.args {
             arg_spec.push(arg.format());
             generics = generics.union(&match &arg.named_sign.component_signature {
-                ComponentSignature::Signature(s) => s.generics.clone(),
+                ComponentSignature::Signature(s) => s.get_generics(),
                 ComponentSignature::Generic(g) => Generics::multiple(vec![g.clone()]),
             });
         }
@@ -36,7 +36,7 @@ impl FunctionEntity {
             self.visibility,
             self.synchronicity.format(),
             self.name,
-            generics.format_diamond_typed(),
+            generics.format(),
             formatted_args,
             ret,
             generics.format_where_clause(),
@@ -91,9 +91,9 @@ impl Method {
             // Extremely inefficient but who cares, this should never be hot
             match &arg.named_sign.component_signature {
                 ComponentSignature::Signature(s) => {
-                    for arg_generic in &s.generics.generics {
+                    for arg_generic in &s.get_generics().get_generics() {
                         let mut unique = true;
-                        for generic in &self.container_inherited_generics.generics {
+                        for generic in &self.container_inherited_generics.get_generics() {
                             if generic.alias == arg_generic.alias {
                                 unique = false;
                                 break;
@@ -106,7 +106,7 @@ impl Method {
                 }
                 ComponentSignature::Generic(g) => {
                     let mut unique = true;
-                    for generic in &self.container_inherited_generics.generics {
+                    for generic in &self.container_inherited_generics.get_generics() {
                         if generic.alias == g.alias {
                             unique = false;
                             break;
@@ -142,7 +142,7 @@ impl Method {
             self.visibility,
             self.synchronicity.format(),
             self.name,
-            generics.format_diamond_typed(),
+            generics.format(),
             self_ownership,
             formatted_args,
             ret,

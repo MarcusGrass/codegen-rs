@@ -168,7 +168,7 @@ fn create_unioned_generic_function() {
             ),
         ],
         "MyType::new()",
-        Some(ComponentSignature::Signature(Signature::generic(
+        Some(ComponentSignature::Signature(Signature::generic_container(
             RustType::in_scope("MyType"),
             generics,
         ))),
@@ -178,7 +178,7 @@ fn create_unioned_generic_function() {
 
 #[test]
 fn implement_self() {
-    let my_struct = Signature::generic(
+    let my_struct = Signature::generic_container(
         RustType::in_scope("MyStruct"),
         Generics::multiple(vec![Generic::unbounded("T")]),
     );
@@ -253,11 +253,11 @@ fn implement_self() {
 
 #[test]
 fn implement_for() {
-    let my_struct = Signature::generic(
+    let my_struct = Signature::generic_container(
         RustType::in_scope("MyStruct"),
         Generics::multiple(vec![Generic::unbounded("T")]),
     );
-    let other_struct = Signature::generic(
+    let other_struct = Signature::generic_container(
         RustType::in_scope("Iterator"),
         Generics::multiple(vec![Generic::unbounded("T")]),
     );
@@ -279,7 +279,7 @@ fn implement_for() {
             vec![],
             Generics::default(),
             Some("todo!();"),
-            Some(ComponentSignature::Signature(Signature::generic(
+            Some(ComponentSignature::Signature(Signature::generic_container(
                 RustType::in_scope("Option"),
                 Generics::multiple(vec![Generic::unbounded("T")]),
             ))),

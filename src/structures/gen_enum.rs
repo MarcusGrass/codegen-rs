@@ -21,11 +21,11 @@ impl EnumEntity {
             .iter()
             .filter_map(|member| match &member.member_type {
                 MemberType::Empty(_) => None,
-                MemberType::Type(s) => Some(s.generics.clone()),
+                MemberType::Type(s) => Some(s.get_generics()),
                 MemberType::Pattern(ncs) => ncs
                     .iter()
                     .map(|ncs| match &ncs.component_signature {
-                        ComponentSignature::Signature(s) => s.generics.clone(),
+                        ComponentSignature::Signature(s) => s.get_generics(),
                         ComponentSignature::Generic(g) => Generics::multiple(vec![g.clone()]),
                     })
                     .reduce(|a, b| a.union(&b)),
@@ -39,7 +39,7 @@ impl EnumEntity {
             self.derives.format(),
             self.visibility.format(),
             self.name,
-            union.format_diamond_typed(),
+            union.format(),
             union.format_where_clause()
         );
         for member in &self.members {
@@ -99,7 +99,7 @@ impl MemberType {
                 .map(|v| format!(" = {},", v))
                 .unwrap_or_else(|| String::from(",")),
             MemberType::Type(s) => {
-                format!("({}),", s.format_diamond_typed())
+                format!("({}),", s.format())
             }
             MemberType::Pattern(c) => {
                 let chain = c
@@ -177,7 +177,7 @@ mod tests {
             vec![
                 EnumMember::new(
                     "MyFirstTag",
-                    MemberType::Type(Signature::generic(
+                    MemberType::Type(Signature::generic_container(
                         RustType::in_scope("MyStruct"),
                         Generics::multiple(vec![Generic::bounded(
                             "T",
