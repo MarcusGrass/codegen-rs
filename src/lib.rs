@@ -24,7 +24,7 @@ pub trait HasAnnotationBuilder {
 }
 
 pub struct ModuleBuilder {
-    mod_file: FileBuilder,
+    pub mod_file: FileBuilder,
     module_files: Vec<ModuleFile>,
     submodules: Vec<Submodule>,
 }
@@ -130,7 +130,7 @@ impl ToSourceFilePart for String {
 pub struct FileBuilder {
     name: String,
     annotations: Annotations,
-    imports: Vec<Import>,
+    imports: Vec<OrderedFormat<Import>>,
     constants: Vec<OrderedFormat<ConstantBuilder>>,
     type_defs: Vec<OrderedFormat<TypeDef>>,
     functions: Vec<OrderedFormat<FunctionBuilder>>,
@@ -165,7 +165,8 @@ impl FileBuilder {
     add_annotation!();
 
     pub fn add_import(mut self, import: Import) -> Self {
-        self.imports.push(import);
+        self.imports.push(OrderedFormat::new(self.parts, import));
+        self.parts += 1;
         self
     }
 
@@ -308,10 +309,14 @@ impl FileBuilder {
                     .iter()
                     .map(|i| (i.order, i.value.format_source_file_part())),
             )
+            .chain(
+                self.imports
+                    .iter()
+                    .map(|i| (i.order, i.value.format_source_file_part())),
+            )
             .collect::<Vec<(usize, String)>>();
         formatted.sort_by(|a, b| a.0.cmp(&b.0));
         std::iter::once(self.annotations.format())
-            .chain(self.imports.iter().map(|i| i.format_source_file_part()))
             .chain(exposed_modules.iter().map(Module::format))
             .chain(formatted.into_iter().map(|(_, s)| s))
             .collect::<Vec<String>>()
