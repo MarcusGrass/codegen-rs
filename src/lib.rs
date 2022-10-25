@@ -14,6 +14,7 @@ use std::path::Path;
 pub mod structures;
 #[macro_use]
 mod util;
+
 use crate::structures::gen_trait::TraitEntity;
 pub use util::casing::{fix_keyword, InferCase, RustCase};
 
@@ -466,8 +467,11 @@ impl EnumBuilder {
     set_visibility!();
 
     pub fn add_tag_member(mut self, name: impl Into<String>) -> Self {
-        self.members
-            .push(EnumMember::new(name, MemberType::Empty(None)));
+        self.members.push(EnumMember::new(
+            name,
+            MemberType::Empty(None),
+            Annotations::empty(),
+        ));
         self
     }
 
@@ -479,13 +483,31 @@ impl EnumBuilder {
         self.members.push(EnumMember::new(
             name,
             MemberType::Empty(Some(value_literal.into())),
+            Annotations::empty(),
         ));
         self
     }
 
     pub fn add_type_member(mut self, name: impl Into<String>, type_signature: Signature) -> Self {
-        self.members
-            .push(EnumMember::new(name, MemberType::Type(type_signature)));
+        self.members.push(EnumMember::new(
+            name,
+            MemberType::Type(type_signature),
+            Annotations::empty(),
+        ));
+        self
+    }
+
+    pub fn add_type_member_with_annotations(
+        mut self,
+        name: impl Into<String>,
+        type_signature: Signature,
+        annotations: Annotations,
+    ) -> Self {
+        self.members.push(EnumMember::new(
+            name,
+            MemberType::Type(type_signature),
+            annotations,
+        ));
         self
     }
 
@@ -494,8 +516,11 @@ impl EnumBuilder {
         name: impl Into<String>,
         patterns: Vec<NamedComponentSignature>,
     ) -> Self {
-        self.members
-            .push(EnumMember::new(name, MemberType::Pattern(patterns)));
+        self.members.push(EnumMember::new(
+            name,
+            MemberType::Pattern(patterns),
+            Annotations::empty(),
+        ));
         self
     }
 

@@ -43,7 +43,11 @@ impl EnumEntity {
             union.format_where_clause()
         );
         for member in &self.members {
-            let _ = base.write_fmt(format_args!("{}\n", member.format()));
+            let _ = base.write_fmt(format_args!(
+                "{}\n{}\n",
+                member.annotations.format(),
+                member.format()
+            ));
         }
         base.push_str("}\n");
         base
@@ -69,13 +73,15 @@ impl EnumEntity {
 pub struct EnumMember {
     name: String,
     member_type: MemberType,
+    annotations: Annotations,
 }
 
 impl EnumMember {
-    pub fn new(name: impl Into<String>, member_type: MemberType) -> Self {
+    pub fn new(name: impl Into<String>, member_type: MemberType, annotations: Annotations) -> Self {
         Self {
             name: name.into(),
             member_type,
+            annotations,
         }
     }
 
