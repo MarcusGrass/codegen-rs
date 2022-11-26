@@ -447,7 +447,7 @@ mod tests {
 
     #[test]
     fn module_format() {
-        let module = Module::new(Visibility::Public, "my_mod");
+        let module = Module::new(Visibility::Public, "my_mod", Annotations::empty());
         assert_eq!("pub mod my_mod;\n", module.format());
     }
 }

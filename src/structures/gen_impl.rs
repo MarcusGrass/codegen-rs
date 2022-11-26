@@ -1,3 +1,4 @@
+use crate::structures::generics::{Generic, Generics};
 use crate::structures::method::Method;
 use crate::structures::{Annotations, Signature, TypeDef};
 use crate::{ConstantEntity, Visibility};
@@ -15,14 +16,29 @@ pub struct ImplEntity {
 impl ImplEntity {
     pub fn format(&self) -> String {
         let diamond = self.implementor.get_associated_generics().format();
-        let container_owned = self.implementor.get_generics().clone();
+        let container_owned = self.implementor.get_generics();
         let mut base = if let Some(implementing) = &self.implementing {
             let container_owned = self
                 .implementor
                 .get_generics()
                 .union(&implementing.get_generics());
             let union_diamond = container_owned.format();
-            let impl_diamond = implementing.get_generics().format();
+            let impl_diamond: Vec<Generic> = implementing
+                .get_generics()
+                .get_generics()
+                .into_iter()
+                // Extremely inefficient
+                .filter(|g| !container_owned.get_generics().contains(g))
+                .collect();
+            let impl_diamond = Generics::multiple(impl_diamond).format();
+            let diamond: Vec<Generic> = self
+                .implementor
+                .get_associated_generics()
+                .get_generics()
+                .into_iter()
+                .filter(|g| !container_owned.get_generics().contains(g))
+                .collect();
+            let diamond = Generics::multiple(diamond).format();
             format!(
                 "{}impl{union_diamond} {}{impl_diamond} for {}{diamond} {} {{\n",
                 self.annotations.format(),

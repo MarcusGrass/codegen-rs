@@ -190,6 +190,7 @@ mod tests {
                             Bounds::single(Bound::required(RustType::in_scope("Debug"))),
                         )]),
                     )),
+                    Annotations::empty(),
                 ),
                 EnumMember::new(
                     "MySecondTag",
@@ -207,11 +208,16 @@ mod tests {
                             ))),
                         ),
                     ]),
+                    Annotations::empty(),
                 ),
-                EnumMember::new("MyThirdTag", MemberType::Empty(Some("Value".to_owned()))),
-                EnumMember::new("MyFourthTag", MemberType::Empty(None)),
+                EnumMember::new(
+                    "MyThirdTag",
+                    MemberType::Empty(Some("Value".to_owned())),
+                    Annotations::empty(),
+                ),
+                EnumMember::new("MyFourthTag", MemberType::Empty(None), Annotations::empty()),
             ],
         );
-        assert_eq!("#[cfg(feature = \"debug\")]\n#[derive(Debug)]\npub enum MyEnum<T> where T: Debug {\nMyFirstTag(MyStruct<T>),\nMySecondTag { first: i32, second: u32 }, \nMyThirdTag = Value,\nMyFourthTag,\n}\n", enum_e.format());
+        assert_eq!("#[cfg(feature = \"debug\")]\n#[derive(Debug)]\npub enum MyEnum<T> where T: Debug {\n\nMyFirstTag(MyStruct<T>),\n\nMySecondTag { first: i32, second: u32 }, \n\nMyThirdTag = Value,\n\nMyFourthTag,\n}\n", enum_e.format());
     }
 }

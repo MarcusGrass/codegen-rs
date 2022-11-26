@@ -58,7 +58,7 @@ impl Generics {
 
     pub fn format(&self) -> String {
         match self {
-            Generics::Associated(a) => Self::format_diamond_typed(&a),
+            Generics::Associated(a) => Self::format_diamond_typed(a),
             Generics::Single(s) => s.alias.clone(),
         }
     }
@@ -235,14 +235,14 @@ mod tests {
     #[test]
     fn generic_format() {
         let generic = Generics::default();
-        assert_eq!("", &generic.format_diamond_typed());
+        assert_eq!("", &generic.format());
         let generic = Generics::multiple(vec![Generic::unbounded("T")]);
-        assert_eq!("<T>", &generic.format_diamond_typed());
+        assert_eq!("<T>", &generic.format());
         let generic = Generics::multiple(vec![Generic::bounded(
             "T",
             Bounds::single(Bound::required(RustType::in_scope("Debug"))),
         )]);
-        assert_eq!("<T>", &generic.format_diamond_typed());
+        assert_eq!("<T>", &generic.format());
         assert_eq!("where T: Debug ", &generic.format_where_clause());
         let generic = Generics::multiple(vec![
             Generic::bounded(
@@ -255,7 +255,7 @@ mod tests {
                 Bounds::single(Bound::optional(RustType::in_scope("Sized"))),
             ),
         ]);
-        assert_eq!("<T, R, V>", &generic.format_diamond_typed());
+        assert_eq!("<T, R, V>", &generic.format());
         assert_eq!("where T: Debug, V: ?Sized ", &generic.format_where_clause());
     }
 
@@ -264,28 +264,28 @@ mod tests {
         let generics = Generics::default();
         let first_generic = Generics::multiple(vec![Generic::unbounded("T")]);
         let generics = generics.union(&first_generic);
-        assert_eq!(1, generics.generics.len());
-        assert_eq!("<T>", generics.format_diamond_typed());
+        assert_eq!(1, generics.get_generics().len());
+        assert_eq!("<T>", generics.format());
         let generics = generics.union(&Generics::multiple(vec![Generic::bounded(
             "R",
             Bounds::single(Bound::required(RustType::in_scope("Debug"))),
         )]));
-        assert_eq!(2, generics.generics.len());
-        assert_eq!("<T, R>", generics.format_diamond_typed());
+        assert_eq!(2, generics.get_generics().len());
+        assert_eq!("<T, R>", generics.format());
         assert_eq!("where R: Debug ", generics.format_where_clause());
         let generics = generics.union(&Generics::multiple(vec![Generic::bounded(
             "R",
             Bounds::single(Bound::optional(RustType::in_scope("Sized"))),
         )]));
-        assert_eq!(2, generics.generics.len());
-        assert_eq!("<T, R>", generics.format_diamond_typed());
+        assert_eq!(2, generics.get_generics().len());
+        assert_eq!("<T, R>", generics.format());
         assert_eq!("where R: Debug + ?Sized ", generics.format_where_clause());
         let generics = generics.union(&Generics::multiple(vec![Generic::bounded(
             "R",
             Bounds::single(Bound::required(RustType::in_scope("Sized"))),
         )]));
-        assert_eq!(2, generics.generics.len());
-        assert_eq!("<T, R>", generics.format_diamond_typed());
+        assert_eq!(2, generics.get_generics().len());
+        assert_eq!("<T, R>", generics.format());
         assert_eq!("where R: Debug + Sized ", generics.format_where_clause());
     }
 }
